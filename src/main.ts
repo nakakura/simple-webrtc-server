@@ -17,7 +17,9 @@ const io = socketIo.listen(server);
 const hash: {[key: string]: SocketIO.Socket} = {};
 
 io.sockets.on('connection', (socket: SocketIO.Socket)=>{
+    console.log("on connection");
     socket.on('list', (data: any)=>{
+        console.log("on list");
         const array = Object.keys(hash);
         socket.emit("list", array);
     });
@@ -27,8 +29,10 @@ io.sockets.on('connection', (socket: SocketIO.Socket)=>{
             socket.disconnect();
         }
 
+        console.log("login from " + data.peerId);
         hash[data.peerId] = socket;
         socket.peerId = data.peerId;
+        socket.emit("login", {type: "login", message: "success"});
     });
 
     socket.on("message", (peerId: string, message: any)=>{

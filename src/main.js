@@ -10,7 +10,9 @@ var server = http.createServer(function (req, res) {
 var io = socketIo.listen(server);
 var hash = {};
 io.sockets.on('connection', function (socket) {
+    console.log("on connection");
     socket.on('list', function (data) {
+        console.log("on list");
         var array = Object.keys(hash);
         socket.emit("list", array);
     });
@@ -18,8 +20,10 @@ io.sockets.on('connection', function (socket) {
         if (!("key" in data) || !("peerId" in data) || data.peerId in hash) {
             socket.disconnect();
         }
+        console.log("login from " + data.peerId);
         hash[data.peerId] = socket;
         socket.peerId = data.peerId;
+        socket.emit("login", { type: "login", message: "success" });
     });
     socket.on("message", function (peerId, message) {
         if (!(peerId in hash))

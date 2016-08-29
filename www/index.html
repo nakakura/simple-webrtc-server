@@ -16,6 +16,7 @@
   var params = getUrlVars();
   console.log(params);
   if("peerId" in params && "targetId" in params){
+    console.log("start connection");
     var io_ = io.connect();
 
     io_.on("disconnect", function(){
@@ -26,18 +27,28 @@
     hoge.key = "hogehoge";
     hoge.peerId = params['peerId'];
 
-    io_.emit("login", hoge);
-    io_.on("message", function(message){
-      console.log(message);
+    io_.on("connect", function(){
+      console.log("connection");
+      io_.emit("login", hoge);
+
+      io_.on("login", function(message){
+        console.log(message);
+      });
+
+      io_.on("message", function(message){
+        console.log(message);
+      });
+
+      io_.on("list", function(list){
+        console.log(list);
+        console.log(params.targetId);
+        if(list.includes(params.targetId)){
+          io_.emit("message", params.targetId, {item: "text"});
+        }
+      });
     });
 
-    io_.on("list", function(list){
-      console.log(list);
-      console.log(params.targetId);
-      if(list.includes(params.targetId)){
-        io_.emit("message", params.targetId, {item: "text"});
-      }
-    });
     io_.emit("list");
+
   }
 </script>
