@@ -5,7 +5,7 @@ import * as fs from 'fs';
 import * as http from 'http';
 import * as _ from 'lodash';
 
-const port = process.env.VCAP_APP_PORT || 3000;
+const port = process.env.VCAP_APP_PORT || 4000;
 
 const server = http.createServer((req: any, res: any)=>{
     res.writeHead(200, { 'Content-Type' : 'text/html' });
@@ -16,7 +16,11 @@ const io = socketIo.listen(server);
 
 const hash: {[key: string]: SocketIO.Socket} = {};
 
-io.sockets.on('connection', (socket: SocketIO.Socket)=>{
+interface SocketWithPeerId extends SocketIO.Socket{
+    peerId: string;
+}
+
+io.sockets.on('connection', (socket: SocketWithPeerId)=>{
     console.log("on connection");
     socket.on('list', (data: any)=>{
         console.log("on list");
@@ -25,17 +29,31 @@ io.sockets.on('connection', (socket: SocketIO.Socket)=>{
     });
 
     socket.on('login', (data: any)=>{
+        console.log("login1");
         if(!("key" in data) || !("peerId" in data) || data.peerId in hash) {
+            console.log("login2");
             socket.disconnect();
         }
 
-        console.log("login from " + data.peerId);
+        console.log("login3");
         hash[data.peerId] = socket;
+        console.log("login4");
         socket.peerId = data.peerId;
-        socket.emit("login", {type: "login", message: "success"});
+        console.log("before emit login");
+        socket.emit("login", {type: "success", message: "LOGIN_SUCCESS"});
+        console.log("after emit login");
+    });
+
+    socket.on("sdp", (peerId: string, message: any)=>{
+        console.log("sdp");
+        console.log(message);
+        if(!(peerId in hash)) return;
+        hash[peerId].emit("sdp", message);
     });
 
     socket.on("message", (peerId: string, message: any)=>{
+        console.log("message");
+        console.log(message);
         if(!(peerId in hash)) return;
         hash[peerId].emit("message", message);
     });
@@ -43,6 +61,5 @@ io.sockets.on('connection', (socket: SocketIO.Socket)=>{
     socket.on('disconnect', (reason: string)=>{
         if(!('peerId' in socket)) return;
         delete hash[socket.peerId];
-        console.log("disconnect", socket.id, socket.peerId);
     })
 });

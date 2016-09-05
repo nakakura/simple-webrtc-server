@@ -1,8 +1,9 @@
 /// <reference path="../typings/index.d.ts" />
+"use strict";
 var socketIo = require('socket.io');
 var fs = require('fs');
 var http = require('http');
-var port = process.env.VCAP_APP_PORT || 3000;
+var port = process.env.VCAP_APP_PORT || 4000;
 var server = http.createServer(function (req, res) {
     res.writeHead(200, { 'Content-Type': 'text/html' });
     res.end(fs.readFileSync('www/index.html', 'utf-8'));
@@ -17,15 +18,29 @@ io.sockets.on('connection', function (socket) {
         socket.emit("list", array);
     });
     socket.on('login', function (data) {
+        console.log("login1");
         if (!("key" in data) || !("peerId" in data) || data.peerId in hash) {
+            console.log("login2");
             socket.disconnect();
         }
-        console.log("login from " + data.peerId);
+        console.log("login3");
         hash[data.peerId] = socket;
+        console.log("login4");
         socket.peerId = data.peerId;
-        socket.emit("login", { type: "login", message: "success" });
+        console.log("before emit login");
+        socket.emit("login", { type: "success", message: "LOGIN_SUCCESS" });
+        console.log("after emit login");
+    });
+    socket.on("sdp", function (peerId, message) {
+        console.log("sdp");
+        console.log(message);
+        if (!(peerId in hash))
+            return;
+        hash[peerId].emit("sdp", message);
     });
     socket.on("message", function (peerId, message) {
+        console.log("message");
+        console.log(message);
         if (!(peerId in hash))
             return;
         hash[peerId].emit("message", message);
@@ -34,7 +49,6 @@ io.sockets.on('connection', function (socket) {
         if (!('peerId' in socket))
             return;
         delete hash[socket.peerId];
-        console.log("disconnect", socket.id, socket.peerId);
     });
 });
 //# sourceMappingURL=main.js.map
